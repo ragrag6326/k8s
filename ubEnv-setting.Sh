@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # P1. 修改 sudo不用打密碼  /etc/sudoers 
-# (非root)建議手動修改
 # cat /etc/sudoers | sed '50 s/%sudo   ALL=(ALL:ALL) ALL/%sudo   ALL=(ALL:ALL) NOPASSWD:ALL/g' > /etc/sudoers
+# 手動修改 # 手動修改 # 手動修改
 
 # P2. hosts 解析 
 sudo cp /etc/hosts ~/
@@ -27,13 +27,13 @@ EOF
 # P3. 環境設定
     sudo apt install net-tools -y
     # 確認網卡
-        export NIC=ifconfig | grep 'flags' | cut -d ':' -f 1 | grep -v 'lo'
+        export NIC=`ifconfig | grep 'flags' | cut -d ':' -f 1 | grep -v 'lo' | grep 'en'`
     # 現在IP 
-        export IP=ip a | grep 'ens' | grep 'inet' | awk '{ print $2 }' | cut -d '/' -f 1
+        export IP=`ip a | grep 'ens' | grep 'inet' | awk '{ print $2 }' | cut -d '/' -f 1`
     # GATEWAY
-        export GW=route -n | grep 'ens' | tr -s ' ' | cut -d ' ' -f 2 | head -n 1
+        export GW=`route -n | grep 'ens' | tr -s ' ' | cut -d ' ' -f 2 | head -n 1`
     # Netmask
-        export NM=ip a | grep inet | grep "$NIC" | awk '{ print $2 }' | cut -d '/' -f 2
+        export NM=`ip a | grep inet | grep "$NIC" | awk '{ print $2 }' | cut -d '/' -f 2`
 
 
     # 固定 IP 設定
@@ -42,8 +42,8 @@ export w1IP=192.168.91.132
 export w2IP=192.168.91.133
 
         # m1 主機
-sudo cat /etc/hostname 
-if [ $? = m1 ] ; then
+export hn=`sudo cat /etc/hostname` 
+if [ $hn = "m1" ] ; then
 cat <<EOF | sudo tee /etc/netplan/00-installer-config.yaml > /dev/null
 network:
   ethernets:
@@ -54,11 +54,11 @@ network:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
+echo "IP Setting OK"
 fi
 
         # w1 主機
-sudo cat /etc/hostname 
-if [ $? = w1 ] ; then
+if [ $hn = w1 ] ; then
 cat <<EOF | sudo tee /etc/netplan/00-installer-config.yaml > /dev/null
 network:
   ethernets:
@@ -69,11 +69,13 @@ network:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
+echo "IP Setting OK"
+else
+echo "please setting hostname if ur Workernode is w1"
 fi
 
         # w2 主機
-sudo cat /etc/hostname 
-if [ $? = w2 ] ; then
+if [ $hn = w2 ] ; then
 cat <<EOF | sudo tee /etc/netplan/00-installer-config.yaml > /dev/null
 network:
   ethernets:
@@ -84,9 +86,12 @@ network:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
+echo "IP Setting OK"
+else
+echo "please setting hostname if ur Workernode is w2"
 fi
 
-sudo netplan apply
+sudo netplan apply > /dev/null
 
 
 
