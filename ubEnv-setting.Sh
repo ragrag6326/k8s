@@ -29,7 +29,7 @@ EOF
     # 確認網卡
         export NIC=`ifconfig | grep 'flags' | cut -d ':' -f 1 | grep -v 'lo' | grep 'en'`
     # 現在IP 
-        export IP=`ip a | grep 'ens' | grep 'inet' | awk '{ print $2 }' | cut -d '/' -f 1`
+        export IP=`ip a | grep 'ens' | grep 'inet' | awk '{ print $2 }' | cut -d '.' -f 1-3`
     # GATEWAY
         export GW=`route -n | grep 'ens' | tr -s ' ' | cut -d ' ' -f 2 | head -n 1`
     # Netmask
@@ -37,9 +37,9 @@ EOF
 
 
     # 固定 IP 設定
-export m1IP=192.168.91.130
-export w1IP=192.168.91.132
-export w2IP=192.168.91.133
+export m1IP=130
+export w1IP=132
+export w2IP=133
 
         # m1 主機
 export hn=`sudo cat /etc/hostname` 
@@ -48,13 +48,13 @@ cat <<EOF | sudo tee /etc/netplan/00-installer-config.yaml > /dev/null
 network:
   ethernets:
     $NIC:
-      addresses: [$m1IP/$NM]
+      addresses: [$IP.$m1IP/$NM]
       gateway4: $GW
       nameservers:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
-echo "IP Setting OK"
+echo "IP Setting OK" ; exit
 fi
 
         # w1 主機
@@ -63,13 +63,13 @@ cat <<EOF | sudo tee /etc/netplan/00-installer-config.yaml > /dev/null
 network:
   ethernets:
     $NIC:
-      addresses: [$w1IP/$NM]
+      addresses: [$IP.$w1IP/$NM]
       gateway4: $GW
       nameservers:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
-echo "IP Setting OK"
+echo "IP Setting OK" ; exit
 else
 echo "please setting hostname if ur Workernode is w1"
 fi
@@ -80,13 +80,13 @@ cat <<EOF | sudo tee /etc/netplan/00-installer-config.yaml > /dev/null
 network:
   ethernets:
     $NIC:
-      addresses: [$w2IP/$NM]
+      addresses: [$IP.$w2IP/$NM]
       gateway4: $GW
       nameservers:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
-echo "IP Setting OK"
+echo "IP Setting OK" ; exit
 else
 echo "please setting hostname if ur Workernode is w2"
 fi
