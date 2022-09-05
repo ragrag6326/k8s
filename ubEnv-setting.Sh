@@ -21,7 +21,7 @@ sudo rm hosts
 cat <<EOF | sudo tee /etc/hostname > /dev/null
 m1
 EOF
-fi
+
     # w1 、 w2 主機 請重新設定 /etc/hostname 
 
 # P3. 環境設定
