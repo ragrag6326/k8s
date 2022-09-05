@@ -27,19 +27,19 @@ EOF
 # P3. 環境設定
     sudo apt install net-tools -y
     # 確認網卡
-        export NIC=`ifconfig | grep 'flags' | cut -d ':' -f 1 | grep -v 'lo'`
+        export NIC=ifconfig | grep 'flags' | cut -d ':' -f 1 | grep -v 'lo'
     # 現在IP 
-        export IP=`ip a | grep 'ens' | grep 'inet' | awk '{ print $2 }' | cut -d '/' -f 1`
+        export IP=ip a | grep 'ens' | grep 'inet' | awk '{ print $2 }' | cut -d '/' -f 1
     # GATEWAY
-        export GW=`route -n | grep 'ens' | tr -s ' ' | cut -d ' ' -f 2 | head -n 1`
+        export GW=route -n | grep 'ens' | tr -s ' ' | cut -d ' ' -f 2 | head -n 1
     # Netmask
-        export NM=`ip a | grep inet | grep "$NIC" | awk '{ print $2 }' | cut -d '/' -f 2`
+        export NM=ip a | grep inet | grep "$NIC" | awk '{ print $2 }' | cut -d '/' -f 2
 
 
     # 固定 IP 設定
-m1IP="192.168.91.130"
-w1IP="192.168.91.132"
-w2IP="192.168.91.133"
+export m1IP=192.168.91.130
+export w1IP=192.168.91.132
+export w2IP=192.168.91.133
 
         # m1 主機
 sudo cat /etc/hostname 
