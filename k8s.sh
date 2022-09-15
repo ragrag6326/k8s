@@ -13,11 +13,6 @@
     export GW=`route -n | grep "$NIC" | tr -s ' ' | cut -d ' ' -f 2 | head -n 1`
     export NM=`ip a | grep inet | grep "$NIC" | awk '{ print $2 }' | cut -d '/' -f 2` 
 
-    # Kube-VIP
-    export VIP_TARGET=$(($(cat /etc/hosts | grep m1 | awk '{ print $1 }' | cut -d '.' -f 4)-1))
-    export KUBE_VIP=${IP}.${VIP_TARGET}
-    export KUBE_INTERFACE=$(ip r | grep "${IP}" | awk '{ print $3 }' | tail -n 1 )
-    
     # node & service
     export master=$(cat /etc/hosts | grep -v "#" | grep "$IP" | awk '{ print $2 }' | grep "m" )
     export nodes=$(cat /etc/hosts | grep -v "#" | grep "$IP" | awk '{ print $2 }' | grep "w" )
@@ -129,11 +124,10 @@ else
     #  cri-o 設定檔修改 
     clear 
     echo "cri-o 設定檔修改中" ; sleep 2
-    sudo cat /etc/crio/crio.conf | grep 'cgroup_manager = \"cgroupfs\"' > /dev/null
+    sudo cat /etc/crio/crio.conf | grep 'cgroup_manager = \"systemd\"' > /dev/null
 if [ $? = 0 ] ; then
     echo "crio.conf setting ok" ; sleep 2
 else
-
 # sudo sed -i 's/\[crio.runtime\]/\[crio.runtime\]\nconmon_cgroup = \"pod\"\ncgroup_manager = \"systemd\"\ndefault_runtime = \"crun\"/g' /etc/crio/crio.conf
 # sudo sed -i 's/#\[crio.runtime.runtimes.crun\]/\[crio.runtime.runtimes.crun\]\nruntime_path = \"\/usr\/bin\/crun\"\nruntime_type = \"oci\"\nruntime_root = \"\"/g' /etc/crio/crio.conf
 # sudo sed -i 's/\[crio.network\]/\[crio.network\]\nnetwork_dir = \"\/etc\/cni\/net.d\/\"\nplugin_dir = \"\/opt\/cni\/bin\"/g' /etc/crio/crio.conf
@@ -215,7 +209,7 @@ fi
     fi
     
     # Start the cri-o & kubelet service
-        echo "---cri-o & kubelet service 啟動中---" ; sleep 3 
+        echo "---cri-o & kubelet service 正在啟動---" ; sleep 3 
         sudo systemctl daemon-reload
         sudo systemctl enable --now crio
         sudo systemctl start crio
@@ -262,7 +256,7 @@ fi
         kubectl create namespace tigera-operator
         helm install calico projectcalico/tigera-operator --version v3.24.1 --namespace tigera-operator
         #watch kubectl get pods -n calico-system
-        read -p "初始化完成"  
+        read -p "檢查初始化是否成功"  
         exit
     fi
 
@@ -308,7 +302,7 @@ fi
 
     clear 
         echo " podman & crio & kubernetes 套件及設定完成 " 
-        echo " [ init | join | copy]"  " (./k8s.sh init  or  ./k8s.sh join)"
+        echo " [ init | join | copy ]"  " (./k8s.sh init  or  ./k8s.sh join)"
         read -p "請先初始化(init) & (copy) 完成前兩項動作後，再將woker node (join)"
 
 
