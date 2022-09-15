@@ -6,8 +6,8 @@
 
 # k8s.sh 自動部屬 cri-o podman kubelet kubeadm 套件
   1. m1 安裝完成後 :輸入 " k8s.sh copy " 讓套件部屬在 w1 w2上
-  2. 複製w1 w2且安裝完成後 m1 輸入 : " k8s.sh init " 最後出現等字樣後
-      sudo kubeadm join m1:6443 --token "..."  --discovery-token-ca-cert-hash sha256: "..."
-  3. 最後在將 w1 w2 加入叢集  " k8s.sh join " 
+  2. 複製w1 w2且安裝完成後 m1 輸入 : " k8s.sh init " 
+     出現等字樣後 :sudo kubeadm join m1:6443 --token "..."  --discovery-token-ca-cert-hash sha256: "..."
+  3. 在將 w1 w2 加入叢集  " k8s.sh join " 
 
 
