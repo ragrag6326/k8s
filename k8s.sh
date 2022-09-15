@@ -270,7 +270,7 @@ fi
 
    for wlist in $nodes
     do
-        if [[ $@ = "scp" ]] ; then
+        if [[ $@ = "copy" ]] ; then
             clear
             echo "----$wlist scp now----" ; sleep 2
             scp k8s.sh $wlist:${HOME}
@@ -308,8 +308,8 @@ fi
 
     clear 
         echo " podman & crio & kubernetes 套件及設定完成 " 
-        echo " [ init | join ]"  " (./k8s.sh init  or  ./k8s.sh join)"
-        read -p "請先初始化(init)，完成後再將woker node (join)"
+        echo " [ init | join | copy]"  " (./k8s.sh init  or  ./k8s.sh join)"
+        read -p "請先初始化(init) & (copy) 完成前兩項動作後，再將woker node (join)"
 
 
 
