@@ -270,7 +270,26 @@ fi
     fi
 
 
-# P7.  worker node join
+# P7 . wokernode install
+
+   for wlist in $nodes
+    do
+        if [[ $@ = "copy" ]] ; then
+            clear
+            echo "----$wlist scp now----" ; sleep 2
+            scp k8s.sh $wlist:${HOME}
+
+                ssh $wlist cat ${HOME}/k8s.sh > /dev/null
+            if [ $? = 0 ] ; then
+                 echo "Copy successfully" ; sleep 2
+                        ssh $wlist ./k8s.sh
+            else echo "沒有k8s.sh此檔案" && exit
+            fi
+        fi
+    done
+
+
+# P8.  worker node join
 
     # join command
     export JOIN=$(echo " sudo `kubeadm token create --print-join-command 2>/dev/null`")
@@ -295,9 +314,9 @@ fi
     done
 
     clear 
-        echo " podman & crio & kubernetes 套件及設定完成 " 
-        echo " [ init | join ]"  " (./k8s.sh init  or  ./k8s.sh join)"
-        read -p "請先初始化(init)，完成後再將woker node (join)"
+     echo " podman & crio & kubernetes 套件及設定完成 " 
+        echo " [ init | join | copy ]"  " (./k8s.sh init  or  ./k8s.sh join)"
+        read -p "請先初始化(init) & (copy) 完成前兩項動作後,再將woker node (join)"
 
 
 
