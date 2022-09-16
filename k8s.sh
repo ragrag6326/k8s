@@ -132,6 +132,9 @@ else
 # sudo sed -i 's/#\[crio.runtime.runtimes.crun\]/\[crio.runtime.runtimes.crun\]\nruntime_path = \"\/usr\/bin\/crun\"\nruntime_type = \"oci\"\nruntime_root = \"\"/g' /etc/crio/crio.conf
 # sudo sed -i 's/\[crio.network\]/\[crio.network\]\nnetwork_dir = \"\/etc\/cni\/net.d\/\"\nplugin_dir = \"\/opt\/cni\/bin\"/g' /etc/crio/crio.conf
 
+sudo sed -i 's/\[crio.runtime\]/\# \[crio.runtime\]/g' /etc/crio/crio.conf
+sudo sed -i 's/\[crio.network\]/\# \[crio.network\]/g' /etc/crio/crio.conf
+
 echo -e "
 [crio.runtime]
 # Overide defaults to not use systemd cgroups.
