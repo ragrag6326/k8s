@@ -245,8 +245,8 @@ fi
 
     # init master  
     if [[ $@ = "init" ]] ; then 
-        sudo systemctl status crio | head -n 3
-        sudo systemctl status kubelet | head -n 5
+        sudo systemctl status crio | head -n3 | awk 'NR==1; END{print}'
+        sudo systemctl status kubelet | head -n 5 | awk 'NR==1; END{print}'
         read -p "init之前請檢查 crio & kubelet 是否正常運作"
             sudo kubeadm init --control-plane-endpoint=${KUBE_VIP}:6443 --pod-network-cidr=${POD_CIDR} --service-cidr=${SVC_CIDR} --service-dns-domain=k8s.org --cri-socket=/var/run/crio/crio.sock --upload-certs --v=5
         # master 取得 kube 控制權
@@ -266,7 +266,7 @@ fi
         kubectl create namespace tigera-operator
         helm install calico projectcalico/tigera-operator --version v3.24.1 --namespace tigera-operator
         #watch kubectl get pods -n calico-system
-        read -p "初始化完成確認"
+        read -p "初始化完成確認" ; exit
     fi
 
 
@@ -278,6 +278,7 @@ fi
             clear
             echo "----$wlist scp now----" ; sleep 2
             scp k8s.sh $wlist:${HOME}
+            scp ${HOME}/.kube $wlist:${HOME}
 
                 ssh $wlist cat ${HOME}/k8s.sh > /dev/null
             if [ $? = 0 ] ; then
@@ -297,7 +298,7 @@ fi
     for wlist in $nodes
     do
         if [[ $@ = "join" ]] ; then
-            ssh "$wlist""$JOIN"
+            ssh $wlist $JOIN
             echo " $wlist join now "
 
             # 設定 woker node  可以執行 Pod
@@ -308,8 +309,8 @@ fi
         
             # 加入後需重啟 coredns掛掉，pod溝通
             kubectl -n kube-system rollout restart deployment coredns
-
-            # kubectl -n kube-system rollout restert deployment calico-kube-controllers
+             #kubectl -n kube-system rollout restert deployment calico-kube-controllers
+            exit
         fi
     done
 
