@@ -1,9 +1,9 @@
 # k8s install for ubuntu 22.04
 
 hosts 設定為 
-m1 130
-w1 132
-w2 133
+m1:130
+w1:132
+w2:133
 
 # ubEnv-setting.Sh  安裝Kubernetes設定IP前置作業
 0. curl -L https://raw.githubusercontent.com/ragrag6326/k8s/main/ubEnv-setting.Sh | sh
