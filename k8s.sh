@@ -238,8 +238,8 @@ fi
 
     # init master  
     if [[ $@ = "init" ]] ; then 
-        sudo systemctl status crio | head -n 3
-        sudo systemctl status kubelet | head -n 5
+        sudo systemctl status crio | head -n 3 | awk 'NR==1; END{print}'
+        sudo systemctl status kubelet | head -n 5 | awk 'NR==1; END{print}'
         read -p "init之前請檢查 crio & kubelet 是否正常運作"
             sudo kubeadm init --control-plane-endpoint=${master}:6443 --pod-network-cidr=${POD_CIDR} --service-cidr=${SVC_CIDR} --service-dns-domain=k8s.org --cri-socket=/var/run/crio/crio.sock --upload-certs --v=5
         # master 取得 kube 控制權
