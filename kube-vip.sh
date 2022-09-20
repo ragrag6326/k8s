@@ -121,7 +121,7 @@ else
     clear
 
     # 更新 repository
-        sudo apt-get -qy update
+        sudo apt-get update
     clear
     # 安裝 cri-o 工具
         sudo apt-get -qy install cri-o cri-tools cri-o-runc
@@ -198,7 +198,7 @@ fi
     # Add k8s repository
         sudo echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
     # 更新 repository
-        sudo apt-get -qy update
+        sudo apt-get -y update
     # 使用相同版本 kube
         sudo apt-get -qy install -y kubelet=${KUBE_VER} kubeadm=${KUBE_VER}
     # 保持套件版本，避免發生問題
@@ -213,7 +213,7 @@ fi
         curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
         sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
 
-        sudo apt-get -qy update
+        sudo apt-get -y update
         sudo apt-get -qy install helm
         clear 
     fi
@@ -252,7 +252,7 @@ fi
         sudo systemctl status crio | head -n3 | awk 'NR==1; END{print}'
         sudo systemctl status kubelet | head -n 5 | awk 'NR==1; END{print}'
         read -p "init之前請檢查 crio & kubelet 是否正常運作"
-            sudo kubeadm init --control-plane-endpoint=${KUBE_VIP}:6443 --pod-network-cidr=${POD_CIDR} --service-cidr=${SVC_CIDR} --service-dns-domain=k8s.org --cri-socket=/var/run/crio/crio.sock --upload-certs --v=5
+            sudo kubeadm init --control-plane-endpoint=${master}:6443 --pod-network-cidr=${POD_CIDR} --service-cidr=${SVC_CIDR} --service-dns-domain=k8s.org --cri-socket=/var/run/crio/crio.sock --upload-certs --v=5
         # master 取得 kube 控制權
             mkdir -p ${HOME}/.kube ; sudo cp -i /etc/kubernetes/admin.conf ${HOME}/.kube/config; sudo chown $(id -u):$(id -g) ${HOME}/.kube/config
         # taint masternode (設定 Master 可以執行 Pod)
@@ -288,7 +288,7 @@ fi
             if [ $? = 0 ] ; then
                  echo "Copy successfully" ; sleep 2
                         ssh $wlist ./k8s.sh
-            else echo "沒有k8s.sh此檔案" && exit
+            else echo "${HOME}沒有k8s.sh此檔案 , 請確認檔案名稱是否為 k8s.sh " && exit
             fi
         fi
     done
@@ -314,9 +314,8 @@ fi
             # 加入後需重啟 coredns掛掉，pod溝通
             kubectl -n kube-system rollout restart deployment coredns
              #kubectl -n kube-system rollout restert deployment calico-kube-controllers
-            exit
         fi
-    done
+    done ; echo "-- w1 w2 JOIN completed --" && exit 
 
     clear 
      echo " podman & crio & kubernetes 套件及設定完成 " 
