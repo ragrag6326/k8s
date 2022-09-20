@@ -72,11 +72,11 @@ network:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
-   # ssh 公私鑰匙複製給自己 
+   # ssh 公鑰複製給自己 
   sudo rm -r ${HOME}/.ssh/*
   echo | ssh-keygen -P '' 
   user=$(id -urn)
-  echo " 請輸入密碼 "
+  echo "\n請輸入密碼 "
   ssh-copy-id $user@localhost
   echo "$hn IP Setting OK" , "$hn ssh key copy ok"; sleep 3 ; sudo netplan apply > /dev/null
 fi
@@ -100,11 +100,11 @@ network:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
-clear ; scp m1:.ssh/* ${HOME}
-echo "$hn IP Setting OK" ; "$hn ssh key copy ok" ; sleep 3
-sudo netplan apply > /dev/null 
+clear 
+  echo "$hn IP Setting OK"  ; sleep 3
+  sudo netplan apply > /dev/null 
 else
-echo "please setting hostname if ur Workernode is w1"
+  echo "please setting hostname if ur Workernode is w1"
 fi
 
 
@@ -125,10 +125,11 @@ network:
         addresses: [168.95.1.1,8.8.8.8]
   version: 2
 EOF
-echo " $hn IP Setting OK" ; "$hn ssh key copy ok" ; sleep 3
-sudo netplan apply > /dev/null 
+clear
+  echo " $hn IP Setting OK"  ; sleep 3
+  sudo netplan apply > /dev/null 
 else
-echo "please setting hostname if ur Workernode is w2"
+  echo "please setting hostname if ur Workernode is w2"
 fi
 
 
