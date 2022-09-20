@@ -205,9 +205,9 @@ fi
         sudo apt-mark hold kubelet kubeadm
     
     # kube-vip  yaml 檔下載設定
-        #if [ "$hn" = "$master" ] ; then 
+        if [ "$hn" = "$master" ] ; then 
             wget -O - https://raw.githubusercontent.com/kube-vip/kube-vip/main/docs/manifests/v0.4.1/kube-vip-arp.yaml | sed "s|eth0|${KUBE_INTERFACE}|g" | sed "s|192.168.0.1|${KUBE_VIP}|g" | sed "s|imagePullPolicy\: Always|imagePullPolicy\: IfNotPresent|g" | sudo tee /etc/kubernetes/manifests/kube-vip-arp.yaml
-        #fi
+        fi
 
     # helm
         curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
@@ -229,8 +229,12 @@ fi
 
     # 重啟
     # sudo lsof -i -n -P|grep LISTEN
-    # sudo kubeadm reset 
+    # sudo kubeadm reset -f
+    # rm -r ${HOME}/.kube
+    # sudo crictl ps -a 
+    # sudo systemctl enable kubelet
     # sudo systemctl start kubelet
+
 
 # P5. 初始化 master 
 
@@ -322,5 +326,4 @@ fi
 
 
 
-
-
+ 
