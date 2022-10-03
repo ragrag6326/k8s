@@ -1,0 +1,82 @@
+Question :
+  Create a deployment as follows:
+  Name:nginx-app
+  Using container nginx with version 1.11.0-alpine
+  The deployment should contain 3 replicas
+  Next, deploy the app with new version 1.11.3-alpine by performing a rolling update and record that update.
+  Finally, rollback that update to the previous version 1.11.0-alpine
+
+題目需要:  
+  1.創建一個Deployment
+  2.replicas設定為3 
+  3.更新image版本並記錄
+  4.回滾image版本
+
+大綱:
+  rolling update 和 rollout , 也就是K8s中重要的版本控制、版本升級與版本回滾。
+  這邊指的版本是指image的版本
+
+
+K8s 兩種版本升級策略 :
+
+  1. recreate :
+    recreate方法很直覺, 就是直接將所有Pod一次升級, 一次刪除所有舊版Pod, 再一次創建所有新版Pod, 缺點是更新過程會暫時中斷服務。
+  2. rolling update : 
+    而rolling update則是將舊版Pod一個一個刪除,再一個一個創建新的,可以保證更新期間提供的服務不會中斷。
+    創建Deployment時不必特別指定update strategy type , K8s中default的策略就是RollingUpdate
+    用kubectl describe deploy 命令可以查看
+    Strategy type : RollingUpdate
+
+K8s 版本回滾 (rollback) :
+    K8s中Deployment的升級機制其實是透過 replicaSet 物件完成。
+    更新時會創建一個新的replicaSet , 新舊版replicaSet透過rolling update機制更新完成。
+    所以可以在更新完成後查看replicaSet , 其中一個沒有Pod運行(舊版replicaSet,裡面的Pod被刪除),另一個則有3個Pod(新版replicaSet)。
+
+    [ rollback 重點] 
+    所以K8s為甚麼可以實現版本回滾,就是因為它舊版的replicaSet其實還在,並沒有被刪除,只要重新將它run起來並刪除新replicaSet就可以實現回滾。
+
+
+Answer :
+創建Deployment
+
+  指令如下 :
+  # 創建 deploy   
+    ## 方法1
+      kubectl create deploy nginx-app --image=nginx:1.11.0-alpine --record
+    ## 將replicas設定為3
+      kubectl edit deploy nginx-app
+
+    ## 方法2 
+      kubectl create deploy nginx-app --image=nginx:1.11.0-alpine --dry-run=client -o > q2.yaml
+    ## 修改 yaml後，再apply
+      kubectl apply -f q2.yamal
+
+
+  (升級) deploy the app with new version 1.11.3-alpine by performing a rolling update and record that update.:
+    # 升級image為1.11.3-alpine，並記錄此升級 
+    # 不必特別指定update policy，因為default就是rolling update
+    # nginx=nginx:1.11.3-alpine的nginx是container name
+      kubectl set image deployment nginx-app nginx=nginx:1.11.3-alpine
+
+    # 升級紀錄
+      kubectl rollout history deploy nginx-app
+
+    # 檢查是否升級為 1.11.3-alpine 
+      kubectl get deploy -o wide
+
+    #  更新完成後查看replicaset (舊版replicaSet pod會被刪除) 另一個(replicaSet)則有3個新版的Pod。
+      kubectl get replicasets
+
+  (回滾) rollback that update to the previous version 1.11.0-alpine:
+    # 將(1.11.3-alpine) 回滾到上一個版本 (1.11.0-alpine)
+      kubectl rollout undo deployment nginx-app
+
+    # 檢查是否回滾為 1.11.0-alpine
+      kubectl get deploy -o wide
+    
+    # 回滾狀態確認
+      kubectl rollout status deployment nginx-app
+
+
+
+kubectl delete deploy nginx-app 
