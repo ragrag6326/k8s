@@ -1,0 +1,96 @@
+Question:
+Taint the worker node w1 to be Unschedulable. 
+Once done, create a pod called dev-redis,image redis:alpine to ensure workloads are not scheduled to this worker node. 
+Finally, create a new pod called prod-redis and image redis:alpine with toleration to be scheduled on w1.
+
+key: env_type
+value: production
+operator: Equal
+effect: NoSchedule
+
+
+一、概念:
+  這題也是個 Pod Scheduling 的問題,但是它和之前學的label的方式明顯不同
+二、題目要求: 
+  題目要求我們將 w1 (node)標註為Unschedulable ,且第一個創建的Pod不可以被分派到 w1 上,
+  但是第二個創建的Pod卻必須assing到w1上。
+
+  這樣特殊的Scheduling方式要如何辦到的 , 就需要依靠K8s中的Taint&Toleration
+
+三、Taints & Tolerations 介紹:
+
+  Taints: 即是允許Node抵制 (repel) 某些Pod,使Pod無法在該節點上運行 。
+  Tolerations: 搭配Taints一同使用,擁有Tolerations的Pod可以被分派到擁有Taints的節點上,但前提是兩者能夠匹配(key&value)。
+      Taints 用於Node ; Tolerations 則用於Pod
+
+四、Taints可以透過kubectl taint指命: 
+  kubectl taint nodes <node-name> <key>=<value>:<effect>
+    新增:kubectl taint nodes w1 size=large:NoSchedule
+    刪除:kubectl taint nodes w1 size=large:NoSchedule-
+
+    effect 欄位:
+      NoSchedule : 除非Pod明確宣告可以容忍這個Taint,否則不會被調度到g8node1上。
+      PreferNoSchedule : 意思是優先,一個Pod若沒有宣告容忍這個Taint,則K8s會盡量避免把該Pod調度到這個節點上,但不是強制的。
+      NoExcute : 該Pod已經在此節點上運行,則會被驅逐;若沒有在此節點上運行,也不會再被調度到此節點上
+
+
+五、 (Tolerations容忍)上述例子的taint的例子:
+    若要讓Pod可以被分派到有taint的Node上,則需要宣告Tolerations。
+    下面兩個Tolerations的設定都可以容忍w1,因此可被調度到 w1 節點上
+
+tolerations:
+- key: "size"
+  operator: "Equal"
+  value: "large"
+  effect: "NoSchedule"
+
+tolerations:
+- key: "size"
+  operator: "Exists"
+  effect: "NoSchedule"
+
+  Pod的Toleration宣告中的key和effect需要與Taint的設定保持一致,並滿足以下條件之一
+    1.operator的值是Exists(無須指定value)
+    2.operator的值是Equal且value值相等
+
+
+六、常見的使用Taint和Toleration的應用場景有:
+  1.獨佔節點
+  2.具有特資源(硬體裝置)的節點
+  3.應對節點故障(先將Pod移除,才能對Node做trobleshooting) 例如:Deploy 會使pod一直重生
+
+
+七、題目細節:
+    這題就是Taint和Toleration的應用題型,但值得注意的是,這題只在單一節點上設定Taint是不行的,
+    因為Taint只能確保沒有Toleration的Pod不會被調度到該Node上,但是不能保證有Toleration的Pod一定可以被調度到有Taint的Node上
+  假設:
+    W1有(Taint) W2 (沒有) , 創建Pod有w1的Toleration,Pod能在W1運行,同時也能在W2上運行,兩者沒有衝突。
+ 
+
+ Answer:
+    key: env_type
+    value: production
+    operator: Equal
+    effect: NoSchedule
+  步驟:
+    1.Taint w1和w2
+    2.Pod1 能容忍w2但無法容忍w1
+    3.Pod2 能容忍w1但無法容忍w2
+
+    第一步: 先將 w1 和 w2 加上Taint
+      kubectl taint nodes w1 env_type=production:NoSchedule
+      kubectl taint nodes w2 other_type=development:NoSchedule
+    
+    第二步: 
+      創建第一個Pod, 讓它無法被調度到 w1 上,那就讓它能容忍w2的Taint
+      tolerations:
+      - key: "other_type"
+        operator: "Exists"
+        effect: "NoSchedule"
+
+      創建第二個Pod,讓它可以被調度到w1上,讓它能容忍w1的Taint
+      tolerations:
+      - key: "env_type"
+        operator: "Equal"
+        value: "development"
+        effect: "NoSchedule"
