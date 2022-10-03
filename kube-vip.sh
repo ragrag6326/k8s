@@ -14,7 +14,7 @@
     export NM=`ip a | grep inet | grep "$NIC" | awk '{ print $2 }' | cut -d '/' -f 2` 
 
     # Kube-VIP
-    export VIP_TARGET=$(($(cat /etc/hosts | grep m1 | awk '{ print $1 }' | cut -d '.' -f 4)-1))
+    export VIP_TARGET=$(cat /etc/hosts | grep m1 | awk '{ print $1 }' | cut -d '.' -f 4)
     export KUBE_VIP=${IP}.${VIP_TARGET}
     export KUBE_INTERFACE=$(ip r | grep "${IP}" | awk '{ print $3 }' | tail -n 1 )
     
@@ -291,7 +291,7 @@ fi
             else echo "${HOME}沒有k8s.sh此檔案 , 請確認檔案名稱是否為 k8s.sh " && exit
             fi
         fi
-    done
+    done ; echo "-- w1 w2 套件及設定完成 --" && exit 
 
 
 # P8.  worker node join
@@ -306,14 +306,14 @@ fi
             echo " $wlist join now "
 
             # 設定 woker node  可以執行 Pod
-            kubectl taint node ${wlist} node-role.kubernetes.io/control-plane:NoSchedule-
-            kubectl taint node ${wlist} node-role.kubernetes.io/master:NoSchedule-
+            #kubectl taint node ${wlist} node-role.kubernetes.io/control-plane:NoSchedule-
+            #kubectl taint node ${wlist} node-role.kubernetes.io/master:NoSchedule-
             # 標記為 worker 節點 
             kubectl label node ${wlist} node-role.kubernetes.io/worker=
         
             # 加入後需重啟 coredns掛掉，pod溝通
             kubectl -n kube-system rollout restart deployment coredns
-             #kubectl -n kube-system rollout restert deployment calico-kube-controllers
+            #kubectl -n kube-system rollout restert deployment calico-kube-controllers
         fi
     done ; echo "-- w1 w2 JOIN completed --" && exit 
 
