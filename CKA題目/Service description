@@ -1,0 +1,31 @@
+Question :
+Create and configure the service front-end-service
+so it's accessible through NodePort/ClusterIP and routes to the existing Pod named front-end
+
+題目需要 :
+創建Service , 將Pod expose出去
+
+Answer :
+  這種方法透過kubectl expose命令創建Service
+
+  kubectl create service
+
+  指令如下 :
+    # 方法一 : 這種方法透過kubectl expose命令創建Service
+      kubectl expose pod front-end --name=front-end-service --type=NodePort --port=80
+    
+    # 方法二 : 第二種方法則是透過YAML檔創建Service
+              #這種方法需要先檢查Pod的label是甚麼，再透過selector來選取
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-end-service
+spec:
+  type: NodePort
+  selector:
+    <pod-key>: <pod-value>
+  ports:
+    - protocol: TCP
+      port: 80
+
+      
