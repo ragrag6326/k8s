@@ -1,0 +1,124 @@
+Question:
+Create a Pod called redis-storage with image redis:alpine with a Volume of type emptyDir that lasts for the life of the Pod. Specs on the right
+
+Pod named "redis-storage" created
+Pod "redis-storage" uses Volume type of emptyDir
+Pod "redis-storage" uses volumeMount with mountPath = /data/redis
+
+
+
+Volume 的概念:
+  一但Container被刪除 , Container中的資料也會一併被刪除, 也就是說Container內的資料是隨著Container存在而存在的。
+  如何將Container的資料保存下來,就需要透過Volume了。
+
+  Volume可以是一個Node或是一個雲端儲存平台,是K8s實現儲存資料的方式。透過將Volume mount 到Pod上,就可以實現儲存Pod的資料
+  多個Pod可以同時mount同一個Volume
+
+ Vloume類型非常多,常見的有以下:
+  configMap
+  csi
+  emptyDir
+  hostPath
+  persistentVolumeClaim
+
+
+如何 Mount 例子:
+  Pod要如何mount到Volume呢?我們來舉個例子,下面是一個亂數產生器的Pod YAML
+apiVersion: v1
+kind: Pod
+metadata:
+  name: random-number-generator
+spec:
+  containers:
+  - image: alpine
+    name: alpine
+    command: ["/bin/bash", "-c"]
+    args: ["shuf -i 0-50 -n 1 >> /opt/result.out"]   # 會將結果輸出到容器的/opt/result.out這個檔案下,但是容器的資料會消失
+    # container中要mount到volume上的目錄
+    volumeMounts:
+    - mountPath: /opt
+      name: test-volume  # <--- 所以我們要將輸出資料mount到test-volume這個Volume上
+  # vloume的名稱、路徑及類別
+  volumes:
+  - name: test-volume
+    hostPath:  # <--- 這個Volume的type是hostPath
+      path: /data # <--- 也就是掛載/data這個目錄 ,也就是這個Pod所在Node的/data 目錄,就是我們的Volume。
+      type: Directory
+
+
+
+Answer:
+
+  1.創建一個Pod
+  2.mount到類型為emptyDir的Volume中。
+
+    kubectl run redis-storage --image=redis:alpine --restart=Never --dry-run=client -o yaml > q7.yaml
+# 改成以下
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-storage
+spec:
+  containers:
+  - image: redis:alpine
+    name: redis-storage
+    volumeMounts:
+    - mountPath: /data/redis
+      name: test-volume
+  volumes:
+  - name: test-volume
+    emptyDir: {}
+
+# 啟動pod
+    kubectl apply -f q7.yaml
+
+
+EmptyDir :
+
+當Pod調度某給Node時,首先創建emptyDir Volume,並且該Pod在該Node上運行時就存在。
+EmptyDir顧名思義,它最初是空的。Pod中的容器都可以在emptyDir Volume中讀取和寫入相同的文件,
+儘管該Volume可以安裝在每個Container中的相同或不同路徑上。當Pod從Node中被刪除時,emptyDir中的數據也將被刪除。
+
+  emptyDir的用途包含:
+  臨時空間，例如用於某些應用程式執行階段所需的臨時目錄，且無須永久保存
+  長時間工作的中間過程CheckPoint的臨時儲存目錄
+  多容器共用目錄
+
+
+# EmptyDir 測試
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+  - name: c1
+    image: centos:7
+    command:
+      - "bin/bash"
+      - "-c"
+      - "sleep 10000"
+    volumeMounts:
+      - name: xchange
+        mountPath: "/tmp/xchange"
+  - name: c2
+    image: centos:7
+    command:
+      - "bin/bash"
+      - "-c"
+      - "sleep 10000"
+    volumeMounts:
+      - name: xchange
+        mountPath: "/tmp/data"
+  volumes:
+  - name: xchange
+    emptyDir: {}
+
+    kubectl exec test -c c1 -i -t -- bash
+
+
+    kubectl exec test -c c2 -i -t -- bash
+
+
+
+
