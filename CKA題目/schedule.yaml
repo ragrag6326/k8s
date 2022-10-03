@@ -1,0 +1,63 @@
+Question :
+Schedule a Pod as follows:
+Name:nginx-kusc00101
+Image:nginx
+Nodeselector:disk=ssd
+
+Answer :
+用kuberctl run 先創建一個yaml檔
+
+  指令如下 :
+  kubectl run nginx-kusc00101 --image=nginx --restart=Never --dry-run=client -o yaml > q1.yaml
+
+  --restart=Never 用來識別Pod , 若 --restart=Always 則是deployment
+
+  --dry-run=client 表示一些default的參數先拿掉,暫時不需要submit出去 (通常在輸出yaml時使用),若要直接創建物件不輸出yaml就無需加此參數
+  因為要做"節點選擇"(Nodeselector) 所以要先 -o 輸出成yaml檔案出來做修改 。
+
+# q1.yaml 會出現這樣 
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx-kusc00101
+  name: nginx-kusc00101
+spec:
+  containers:
+  - image: nginx
+    name: nginx-kusc00101
+    resources: {}
+  #nodeselector:
+    #disk: ssd
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+
+#   將YAML 修改為以下
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx-kusc00101
+  name: nginx-kusc00101
+spec:
+  containers:
+  - image: nginx
+    name: nginx-kusc00101
+    resources: {}
+  nodeselector:
+    disk: ssd
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+
+
+補充:
+  若要指定在某個node上運行
+    新增:kubectl label nodes w1 disk=ssd
+    刪除:kubectl label nodes w1 disk-
+   
+    檢查:kubectl describe no/w1 | head -n9
