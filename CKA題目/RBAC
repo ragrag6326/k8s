@@ -1,0 +1,133 @@
+Question:
+Create a new user called john. Grant him access to the cluster. 
+John should have permission to ""create, list, get, update and delete"" pods in the development namespace.
+
+  一、什麼是 RBAC :
+    RBAC (Role-Based Access Control) 
+    了解 RBAC 之前,需要先了解一下K8s中的API Groups。
+    這個API路徑/version和/api就是API Groups。
+    K8s會根據API的目的將多個API集合成一個Group,除了/version、/api以外,還有其他如/logs、/apis和/metrics等,每個API Groups都有不同的目的。
+    而負責K8s集群中功能運作的API就是/api和/apis
+
+  二、 /api (core group) :
+    "負責K8s集群運作的核心功能", 像namespaces、Pods、RCs、Nodes、bindings、Secret、Service等物件
+
+
+  三、 /apis (named group):
+    named group相較於core group更有組織性 , 例如：
+    /apps 、 /extension 、 /networking.k8s.io 、 /storage.k8s.io 、/authentication.k8s.io 、/certificates.k8s.io 都算是named group 。
+
+    在
+    /apps有像是/apps/v1/deployments、/apps/v1/replicasets及/statefulsets
+    /networking.k8s.io下有/networking.k8s.io/v1/networkpolicies
+    /certificates.k8s.io下有/certificates.k8s.io/certificatesigningrequests 等
+
+    /apps、/extension、/networking.k8s.io、/storage.k8s.io、authentication.k8s.io及/certificates.k8s.io 都是屬於API Group。
+
+    以下則可以稱為是這些API group下的resources:
+    /apps/v1/deployments、/apps/v1/replicasets及/statefulsets 
+    每個resources有一系列的actions,表示這些resources可以做的事。這些actions統稱為Verb。
+    Verb包含:
+    list 、 get 、 create 、 delete 、 update、 watct
+    代表可以列出、得到資訊、創建、刪除、更新或查看Deployment等等。
+
+  四、如何查看有哪些API Group :
+    透過curl https://localhost:6443 -k指令 , 但是會發現遭到fotbidden而無法查看,這是因為curl的目的地是https,需要透過相關認證機制。
+      解決方法:
+        1.第一種方法最直接,就是加上https需要的參數,在指令後方加上--key、--cert及--cacert參數即可
+        2.第二種方法直接在Control Plane節點上輸入kubectl proxy命令,再開另一視窗輸入curl http://localhost:8001 -k
+
+
+  五、RBAC 概念:
+    RBAC的概念即是基於 "角色的訪問控制","以角色做為授權 (Authorization) 的基礎"，也就是一種管制訪問 K8s API 的機制。
+    
+    如果我們今天是K8s集群的管理者 (Admin)，我們想讓在集群上開發的開發者(dev)有某些權限 例如他可以新增Pod、移除Pod等等。
+    我們可以個別限制每個開發者的權限,但是當今天開發者數量很多的時候,我們必須有個統一管理的方法,那就是 "Role" 這個物件的功能。
+
+Role 物件舉例:
+    " Role " 創造一個Role物件,名稱則取為developer, yaml檔如下:
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: developer
+rules:
+  ## "" indicates the core API group
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "create", "update", "delete"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+
+  這邊不再是spec欄位,而是 'rules'
+  透過 rbac.authorization.k8s.io 這個 API Group 來進行管理配置。
+
+  rules包含三個子欄位:
+    apiGroups:
+      要使用的API Group name。若此欄空白,則預設為core API (集群運作的核心功能)
+    resources:
+      要對甚麼 resource 進行設定 (namespaces、Pods、RCs、Nodes、bindings、Secret、Service)
+    verb:
+      允許對resources進行的操作 (get,list,create,update,delete,get,watch 等等)
+    rules可以一次設定好幾個,以YAML陣列區隔即可。
+
+
+RoleBinding 物件舉例:
+  有了 dev 的 Role 後 , 下一步就是將 "開發者(dev)" 和上述 "Role" 連結起來 , 也就是讓開發者能成為集群中的 "dev" 這個角色,
+  這時候就需要仰賴 RoleBinding 物件了。  ( RoleBinding 的目的即是連接User和Role )
+
+  " RoleBinding " yaml檔如下:
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-binding
+  namespace: default
+subjects:
+## You can specify more than one "subject"
+- kind: User
+  name: dev-user # "name" is case sensitive 
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  ## "roleRef" specifies the binding to a Role / ClusterRole
+  ## this must be Role or ClusterRole
+  kind: Role
+  ## this "must match" the name of the Role or ClusterRole you wish to bind to
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+
+  這邊是 subjects 和 roleRef 欄位 , 而不是 spec 
+  subjects 欄位用來描述User的資訊
+  roleRef 則是要binding的Role資訊 
+
+綁定完成後, dev 對特定物件做甚麼操作,可以透過以下指令查看:
+  指令
+  $ kubectl auth can-i <verb> <resoureces>
+  範例
+    kubectl auth can-i create nodes
+    kubectl auth can-i delete pods
+
+admin 可檢查 dev 能否對特定物件做甚麼操作,透過以下指令查看:
+  kubectl auth can-i delete nodes --as dev-user
+  kubectl auth can-i create pods --as dev-user
+
+
+
+Create a new user called john. Grant him access to the cluster. 
+John should have permission to ""create, list, get, update and delete"" pods in the development namespace.
+
+Answer :
+  
+  第一步: 先建立指定的 ns 
+    kubctl create ns development 
+
+  第二步: 在指定ns創建 role 身分 , 指定能對 (resources為 "Pods") , 做那些操作 "verbs"
+    kubectl create role developer --resource=pods --verb=create,list,get,update,delete --namespace=development -o yaml > role.yaml
+    
+  第三部: 建立 rolebinding  綁定誰 (john)
+    kubectl create rolebinding developer-rolebinding --role=developer --user=john --namespace=development -o yaml > rolebinding.yaml
+    
+  第四部: 檢查 john 是否能在 development (ns) 操作 "create,list,get,update,delete"
+    kubectl auth can-i create pods -n development --as john
+    
