@@ -1,0 +1,108 @@
+Question:
+Create a pod as follow
+name:my-nginx
+image:nginx
+Add an Init Container within the Pod, the role of Init Container is to create an empty file under /cache/test.txt, 
+Pod Containers determine whether the file exists, exiting if it does not exist.
+
+一、Init Container 概念:
+    Init Container是運行於Pod Container之前的專用容器。Init Conatiner可以應用於一些不包含setup environment 的image。
+    Init Container和Pod Container定義在同一個Pod YAML中,通常是用於幫助Pod Container運行的前置作業。
+    像是Pod Container需要將執行結果輸出到某一檔案,但該檔案初始並不存在,這時就可以利用Init Container在Pod Container運行前先將檔案創建,以供使用。
+
+二、Init Container 運行方式:
+    Init Container與一般Container基本上完全一樣,有一點點不同的地方是,
+    Init Container和Pod Container不會同時存在於同一Pod中,"Pod Container會等待Init Container運行到完成狀態後才創建"。
+    
+    每個初始化容器必須成功完成工作才能啟動下一個容器 (包含初始化容器)。
+    如果Pod的初始化容器失敗,Kubernetes會反復重啟Pod,直到初始化容器成功。 
+    但若Pod的參數--restart=Never,則Kubernetes不會重新啟動Pod。
+
+三、Init Container 功能:
+    Init Container通常是為了完成某些特定的工作而存在的,例如：
+      1.等待某個Service被創建
+      2.向遠端Server註冊此Pod
+      3.讓Pod Container等待一段時間後再創建
+      4.Clone一個Git repo到Volume中
+      5.設定config或環境參數
+
+四、注意事項 :
+    要讓Container做某些事,可以通過Command參數
+    當有Command的Container執行完Command後,會進入CrashLoopBackOff狀態,代表Container工作完成。
+    若想讓它維持在Running Status,可以加上sleep命令
+
+Answer : 
+  題目需求:
+    創建一個Pod Container檢查某檔案是否存在,該檔案由Init Container創建,若檔案不存在則退出。
+    因此我們需要一個Pod,裡面包含：
+      1.一個Pod Container 和一個 Init Container。
+      2.兩者mount到同一Vloume。
+      3.Init Container於該Volume創建檔案。
+      4.Pod Container檢查該Volume,若檔案存在則印出檔案內容,若不存在則退出。
+
+  第一步: 創建需要的yaml檔
+          k run my-nginx --image=nginx --dry-run=client -o yaml > q12.yaml
+
+  第二步: 兩者mount到同一Vloume
+          Container 及 Init Container 需要mount到同一個Vloume
+            volumeMounts:
+            - mountPath: /cache
+              name: cache-volume
+
+  第三部: Init Container於該Volume創建檔案      
+          initContainers:  
+            command: ['touch', '/cache/test.txt']
+            volumeMounts:
+            - mountPath: /cache
+              name: cache-volume
+          volumes:
+          - name: cache-volume
+            emptyDir: {}    
+
+  第四部: Container 判斷該 init 是否有 test.txt 文件存在,不存在則退出。
+          containers:
+          command: ["/bin/sh"]
+          args: ["-c", "cat /cache/test.txt && sleep 3600000"]
+
+          
+完整yaml檔:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: my-nginx
+  name: my-nginx
+spec:
+  containers:
+  - image: nginx
+    name: my-nginx
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "cat /cache/test.txt && sleep 3600000"]
+    volumeMounts:
+    - mountPath: /cache
+      name: cache-volume
+  initContainers: 
+  - name: my-init
+    image: busybox:1.28
+    imagePullPolicy: IfNotPresent
+    command: ['touch', '/cache/test.txt']
+    volumeMounts:
+    - mountPath: /cache
+      name: cache-volume
+  volumes:
+    - name: cache-volume
+      emptyDir: {}
+  restartPolicy: Never
+
+  補充 :
+      touch命令用於建立空檔案
+      當Pod Container能cat到該檔案,代表檔案存在,則會sleep 3600000 (讓它維持在Running Status)
+      若無法cat,代表 /cache/test.txt 不存在,則Pod會處於Error Status,算是達到題目的要求退出
+
+    imagePullPolicy:
+    - Always :每次都檢查
+    - Nerver :不檢查
+    - IfNotPresent :如果local有image就不檢查,local沒有時才pull image
