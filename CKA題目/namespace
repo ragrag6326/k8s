@@ -1,0 +1,19 @@
+Question :
+Create a Pod as follows
+Name:"jenkins"
+Using image:"jenkins"
+In a new Kubernetes namespace named "website-frontend"
+
+
+Answer : 
+
+指令如下 :
+
+1. 先建立 namespace
+    kubectl create ns website-frontend
+
+2. 建立 (jenkins pod) yaml
+    kubectl run jenkins --image=jenkins --restart=Never --dry-run=client -o yaml > q4.yaml
+
+3. 建立 jenkins pod     
+    kubectl apply -f q4.yaml -n website-frontend
