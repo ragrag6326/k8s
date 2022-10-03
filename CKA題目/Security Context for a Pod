@@ -1,0 +1,121 @@
+Question:
+Create a new Pod called super-user-pod with image busybox:1.28. Allow the pod to be able to set system_time
+The container should sleep for 4800 seconds
+Pod:super-user-pod
+Container Image:busybox:1.28
+SYS_TIME capabilities for the conatiner?
+
+
+概念: 
+Security Context , 考的是Pod的安全策略 ,雖然Pod是受到 kubernetes 經過檢查確認合法才得以部署的,
+但是由於這些服務都會直接面向User,容器內本身的權限過高且遭受到攻擊，就會衍生出其他的安全性問題。
+"SecurityContext" 就是用來解決這類問題的,它定義了Pod或容器的特權和訪問控制設置。
+
+SecurityContext包括:
+
+Discretionary Access Control
+訪問目標(如檔案)的權限基於User ID(UID)和 Group ID(GID)。
+
+Security Enhanced Linux (SELinux)
+為目標分配安全標籤
+
+Running as privileged or unprivileged
+以特權或非特權運行
+
+Linux Capabilities
+為某些process提供特權,但不是root的所有特權
+
+AppArmor
+使用程式配置文件來限制個別程式的功能。
+
+Seccomp
+過濾及篩選process的system call
+
+AllowPrivilegeEscalation
+控制process是否可以比其parent process獲得更多的特權。
+
+readOnlyRootFilesystem
+將容器的root file system mount 為 Read-Only。
+
+在 Kubernetes 內也可以透過 SecurityContext 對每個 Container 去進行相關的權限設定。要為Pod指定安全設置,需在Pod YAML中加入securityContext參數。
+
+範例:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+  volumes:
+  - name: sec-ctx-vol
+    emptyDir: {}
+  containers:
+  - name: sec-ctx-demo
+    image: busybox
+    command: [ "sh", "-c", "sleep 1h" ]
+    volumeMounts:
+    - name: sec-ctx-vol
+      mountPath: /data/demo
+    securityContext:
+      allowPrivilegeEscalation: false
+
+在此YAML中:
+runAsUser: 1000
+對於Pod中的任何容器,所有process都已 User ID=1000運行
+runAsGroup: 3000
+Pod的任何容器內的所有process指定 primary group ID為3000。指定runAsGroup時, User ID 1000和 Group ID 3000也將擁有所有創建的檔案。(若省略此參數,K8s default的primary group ID是root(0))
+fsGroup: 2000
+容器的所有process也是supplementary Group ID 2000的一部分。Volume /data/demo 及該Vloume中所有檔案的擁有者均為 Group ID 2000。
+
+
+Answer:
+
+kubectl run super-user-pod --image=busybox:1.28 --restart=Never --dry-run=client -o yaml > q11.yaml
+
+修改如下:
+apiVersion: v1
+kind: Pod
+metadata: 
+    name: super-user-pod
+spec: 
+    containers:
+    - image: busybox:1.28
+      name: super-user-pod
+      ## 加上securityContext參數
+      securityContext:
+        capabilities:
+        ## 允許設定SYS_TIME
+          add: ["SYS_TIME"]
+      ## container sleep 4800
+      command: ["sleep"]
+      args: ["4800"]
+    restartPolicy: Never
+
+
+
+
+使用ubuntu image 才能更改時間 :
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ubuntu-sleeper
+  namespace: default
+spec:
+  containers:
+  - command:
+    - sleep
+    - "4800"
+    image: ubuntu
+    securityContext:
+     capabilities:
+        add: ["SYS_TIME"]
+    name: ubuntu
+
+kubectl exec -it ubuntu-sleeper -- date -s '19 APR 2012 11:14:00'
+
+
+
