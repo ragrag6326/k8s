@@ -1,0 +1,173 @@
+Question:
+A pod definition file is created at q9-pod.yaml. Make use of this manifest file and mount the persistent volume called pv-1. Ensure the pod is running and the PV is bound.
+
+mountPath: /data persistentVolumeClaim Name: my-pvc
+
+persistentVolume Claim configured correctly
+pod using the correct mountPath
+pod using the persistent volume claim?
+
+
+
+Persistent Volume & Persistent Volume Claim :
+  提到 pv&pvc 就要提到 Volume :
+    前面有提到Volume這個概念,當Pod使用Volume時,需要在Pod YAML中定義Volume的configuration。
+    隨著K8s的集群環境增大,大量的使用者需求佈署大量的Pod,這樣就會導致一個情況,
+    那就是使用者每次創建一個Pod時都需要為Pod重新config一個Volume。
+    當某個Volume被某一使用者使用了,所有Pod的configuration file都需要重新config,如此就會讓整個集群的運作非常沒有效率。
+
+  PV & PVC 功能 :
+    因此需要有個集中式管理的storage solution,方法類似讓集群管理者可以創建一個storage pool,
+    使用者根據需求從storage pool中擷取一部分使用,這就是Persistent Volumes(PV) & Persistent Volumes Claim(PVC)和的功能啦
+
+  Persistent Volumes(PV) :
+    是一個pool of Volumes , 由集群管理者創造給整個集群使用。
+    使用者可以透過Persistent Volumes Claim(PVC)在PV上選擇一個區塊作為storage儲存資料,並在其中佈署自己的Applications。
+
+    可以把PV想像成一個100G的Memory,User1以PVC拿了其中的10G,User2也以PVC拿了其中的20G,這樣PV中的Memory就剩下70G。
+    PV就是一個公共儲存空間,要使用這個公共空間,就要搭配 "PVC" 使用。
+
+
+PV & PVC 範例介紹: 
+
+" PV " 的範例YAML:
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv
+spec:
+  capacity:      
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /tmp/data
+
+#capacity:
+  定義這個PV的storage大小。
+#accessModes:
+  PV可以通過資源提供者支援的任何方式安裝在host上。每個PV的存取模式會設置為該Volume支援的特定模式。
+  每個PV都有自己的一組訪問模式,用於描述該特定PV的功能。
+  PV的功能分為三種:
+    ReadWriteOnce:通過單一節點以read-write方式掛載
+    ReadWriteMany:通過多節點以read-write方式掛載
+    ReadOnlyMany:通過多節點以read-only模式掛載
+
+    PV和PVC是兩個獨立的object,由adminstrator創造PV;PVC則由使用者創造,用以使用PV
+
+
+" PVC "的範例YAML:
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests: 
+      storage: 500Mi
+
+  當創建此PVC後,可能會看見它處於Pending Status,這是因為沒有找到合適配對的PV。
+  接著創建PV後,K8s會自動將兩者binding起來,就可以看見PVC是Bound Status囉
+
+
+Pod要如何搭配PVC使用,可以參考下面YAML:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/var/data"
+        name: myvm
+  volumes:
+    - name: myvm
+      persistentVolumeClaim:
+        claimName: myclaim
+
+
+
+Answer:
+這題用到的就是PV和PVC的概念,首先這題已經有個Pod的YAML和running的PV,那我們需要做的就是：
+  1.創建一個PVC,讓PV被此PVC bound住
+  2.創建Pod,mount此PVC
+
+系統環境已經創建了一個Pod的YAML,定義如下：
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: q9-pod
+  name: q9-pod
+spec:
+  containers: 
+  - image: nginx
+    name: q9-pod
+    resources: {}
+  dnspolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
+
+  除此之外,還有一個一經在runing的PV,名為pv-1
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv
+spec:
+  capacity:
+    storage: 20Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /tmp/data
+
+  kubectl get pv 得知 
+  PV處於 "Available Status",代表目前沒有PVC存在,或是沒有合適的PVC可以bind此PV,那我們就需要自己建一個。
+
+" PVC " Yaml創建如下:
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Mi
+
+  apply後,確認PV已經被PVC bound住
+
+
+將PVC作為volume,mount在系統給的範例Pod上：
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: q9-pod
+  name: q9-pod
+spec:
+  containers: 
+  - image: nginx
+    name: q9-pod
+    volumeMounts:
+    - name: my-pd
+      mountPath: /data
+    resources: {}
+  volumes:
+  - name: my-pd
+    persistentVolumeClaim:
+      claimName: my-pvc
+  dnspolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
