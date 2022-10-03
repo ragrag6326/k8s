@@ -1,0 +1,65 @@
+Question :
+Take a backup of the etcd cluster and save it to /tmp/etcd-backup.db
+
+  etcd的備份有兩種方式: 
+
+  Built-in snapshot:
+  etcd支持內建snapshot,因此備份etcd集群很容易。可以使用etcdctl snapshot save命令從集群內物件中獲取,也可以從當前未被etcd process使用的etcd資料目錄中複製member/snap/db 文件。
+  Volume snapshot:
+  如果etcd在支持備份的Volume(例如Amazon Elastic Block Store)上運行,可以通過獲取存Volume的snapshot來備份。
+
+
+Answer : (Built-in snapshot)
+
+  # 下載etcd-client
+    sudo apt install etcd-client
+
+  # 使用etcd v3的版本時，需要設置環境變數ETCDCTL_API=3
+    ETCDCTL_API=3 etcdctl version
+
+  # etcd是static pod，所以etcd檔案目錄即是static pod所在目錄
+    sudo cat /etc/kubernetes/manifests/etcd.yaml
+
+  # 找到這些檔案的路徑，作為之後參數使用
+    --advertise-client-urls=https://192.168.135.130:2379
+    --cert-file=/etc/kubernetes/pki/etcd/server.crt
+    --key-file=/etc/kubernetes/pki/etcd/server.key
+
+  # 連線到etcd例項，並列出member，須帶入etcd.yaml中的參數
+    sudo ETCDCTL_API=3 etcdctl member list --endpoints https://127.0.0.1:2379 \
+    --cert=/etc/kubernetes/pki/etcd/server.crt \
+    --key=/etc/kubernetes/pki/etcd/server.key \
+    --cacert=/etc/kubernetes/pki/etcd/ca.crt 
+
+  # 以etcdctl snapshot save備份
+    sudo ETCDCTL_API=3 etcdctl snapshot save /tmp/etcd-backup.db \
+    --endpoints https://127.0.0.1:2379 \
+    --cert=/etc/kubernetes/pki/etcd/server.crt \
+    --key=/etc/kubernetes/pki/etcd/server.key \
+    --cacert=/etc/kubernetes/pki/etcd/ca.crt  
+
+  # 檢查備份檔案
+    sudo ETCDCTL_API=3 etcdctl snapshot status /tmp/etcd-backup.db -w table \
+    --endpoints https://127.0.0.1:2379 \
+    --cert=/etc/kubernetes/pki/etcd/server.crt \
+    --key=/etc/kubernetes/pki/etcd/server.key \
+    --cacert=/etc/kubernetes/pki/etcd/ca.crt 
+
+
+補充 :
+etcdctl is a command line client for etcd
+使用export ETCDCTL_API=3命令將etcdctl client的ETCDCTL_API環境變數版本設定為3
+
+因為Kubernetes集群使用https,因此需要指定--cert-file、--key-file和--ca-file三個參數,參數檔案都位於 /etc/kubernetes/pki/etcd目錄下。
+至於要怎麼知道參數名稱是--cert、--key和--cacert,它們又代表甚麼意義呢?可以透過ETCDCTL_API=3 etcdctl snapshot save -h命令查找
+
+--cert=""
+identify secure client using this TLS certificate file
+--key=""
+identify secure client using this TLS key file
+--cacert=""
+verify certificates of TLS-enabled secure servers using this CA bundle
+
+
+# 恢復指令
+  ETCDCTL_API=3 etcdctl --data-dir /tmp/etcd-backup.db snapshot restore snapshotdb
