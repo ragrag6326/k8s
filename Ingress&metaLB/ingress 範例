@@ -1,0 +1,281 @@
+
+# 範例一
+echo '
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1
+spec:
+  selector:
+    app: app1
+  ports:
+    - port: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app1
+  labels:
+    app: app1
+spec:
+  containers:
+    - name: app1
+      image: quay.io/flysangel/image:app.golang 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2
+spec:
+  selector:
+    app: app2
+  ports:
+    - port: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app2
+  labels:
+    app: app2
+spec:
+  containers:
+    - name: app2
+      image: quay.io/flysangel/image:app.golang' | kubectl apply -f -
+
+
+echo '
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: test.k8s.org
+    http:
+      paths:
+      - path: /app1
+        pathType: Prefix
+        backend:
+          service:
+            name: app1
+            port:
+              number: 8080
+      - path: /app2
+        pathType: Prefix
+        backend:
+          service:
+            name: app2
+            port:
+              number: 8080' | kubectl apply -f -
+              
+
+
+# 範例二  
+
+echo '
+apiVersion: v1
+kind: Pod
+metadata:
+  name: helloworld-pod
+  labels:
+    app: helloworld-pod
+    tier: backend
+spec:
+  containers:
+  - name: api-server
+    image: zxcvbnius/docker-demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld-service
+spec:
+  selector:
+    app: helloworld-pod
+  ports:
+  - port: 3000 
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: helloworld-ingress
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: helloworld.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: helloworld-service
+            port:
+              number: 3000 ' | kubectl apply -f -
+
+
+# 範例三
+
+echo '
+apiVersion: v1
+kind: Service
+metadata:
+  name: app3
+spec:
+  selector:
+    app: app3
+  ports:
+    - port: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app3
+  labels:
+    app: app3
+spec:
+  containers:
+  - name: app3
+    imagePullPolicy: IfNotPresent
+    image: nginx ' | kubectl apply -f -
+
+
+echo '
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: angular
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: k8s.test3.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app3
+            port:
+              number: 80 ' | kubectl apply -f -
+
+
+
+# 範例四
+
+tls: 憑證用
+  export BASE64_CRT=$(base64 < /etc/kubernetes/pki/ca.crt | tr -d "\n")
+  export BASE64_KEY=$(sudo cat /etc/kubernetes/pki/ca.key | base64 | tr -d '\n'; echo "")
+
+echo '
+apiVersion: v1
+kind: Service
+metadata:
+  name: agweb
+spec:
+  selector:
+    app: agweb
+  ports:
+    - port: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: agweb
+  labels:
+    app: agweb
+spec:
+  containers:
+  - name: agweb
+    imagePullPolicy: IfNotPresent
+    image: willh/ngplus:web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agapi
+spec:
+  selector:
+    app: agapi
+  ports:
+    - port: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: agapi
+  labels:
+    app: agapi
+spec:
+  containers:
+  - name: agapi
+    imagePullPolicy: IfNotPresent
+    image: willh/ngplus:api
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ag-tls
+type: kubernetes.io/tls
+data:
+  tls.crt: ${BASE64_CRT}
+  tls.key: ${BASE64_KEY}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: angular
+spec:
+  tls:
+  - secretName: ag-tls
+  ingressClassName: nginx
+  rules:
+  - host: myk8s.angular.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: agweb
+            port:
+              number: 80 
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: angular-api
+  annotations:
+    nginx.igress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: myk8s.angular.com
+    http:
+      paths:
+      - path: /api/(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: agapi
+            port:
+              number: 80 ' | envsubst | kubectl apply -f -
+
+
+
+# 補充 
+  
+  使用 ingress 只需開放一個對外的 port number , 在(spec.rules.host)能定義將使用者發送的請求導入正確的 service 的pod中
+
+  外網連結:
+    若只單單輸入 ingress對外的IP , Ingress Controller 沒辦法知道要連去哪個 host , 就會卡在 Ingress並且出現404的錯誤。
+    但如果只輸入 (host) 同樣的 ,外網沒辦法解析到ingress的IP,自然就沒辦法進入定義的(host) service中。
+
+    若要在本地機器測試 ingress 是否能正確解析host , 並只需同一個 IP 就能導入正確的service請求。
+      需在以下路徑的 hosts 加入解析 , 才能讀取的到:
+      C:\Windows\System32\drivers\etc
+      <192.168.1.1> (host)
+  
