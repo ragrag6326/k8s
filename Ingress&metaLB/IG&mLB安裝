@@ -1,0 +1,58 @@
+# MetalLB 安裝
+    kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/namespace.yaml
+
+    kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/metallb.yaml
+
+    # configmap 應用程式與設定解耦 , 
+        其目的: 讓 MetalLB 能夠在 configmap 裡面撈取 IP-Pool , 
+        MetalLB 服務會幫忙處理 LoadBalancer 以及對外IP處理 EXTERNAL-IP   
+echo '
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: mlb1
+      protocol: layer2
+      addresses:
+      - 192.168.135.220-192.168.135.230' | kubectl apply -f -
+
+
+
+# Ingress controller
+
+# Ingress Nginx 安裝
+    wget -O - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.2.0/deploy/static/provider/cloud/deploy.yaml | kubectl apply -f -
+
+
+
+
+# MetalLB介紹 ( https://ithelp.ithome.com.tw/articles/10221722 ) 
+              ( https://atbug.com/load-balancer-service-with-metallb/ )
+MetalLB 提供了兩個功能：
+
+1.地址分配：
+    當創建 LoadBalancer Service 時，MetalLB 會為其分配 IP 地址。這個 IP 地址是從預先配置的 IP 地址庫獲取的。同樣，當 Service 刪除後，已分配的 IP 地址會重新回到地址庫。
+2.對外廣播：
+    分配了 IP 地址之後，需要讓集群外的網絡知道這個地址的存在。 MetalLB 使用了標準路由協議實現：ARP、NDP 或者 BGP。
+3.廣播的方式有兩種:
+    第一種是 Layer 2 模式，使用 ARP（ipv4）/NDP（ipv6） 協議；第二種是 BPG。
+
+4.Layer 2 工作原理: 
+    Layer 2 中的 Speaker 工作負載是 DeamonSet 類型，在每台節點上都調度一個 Pod。首先，幾個 Pod 會先進行選舉，選舉出 Leader。 Leader 獲取所有 LoadBalancer 類型的 Service，將已分配的 IP 地址綁定到當前主機到網卡上。也就是說，所有 LoadBalancer 類型的 Service 的 IP 同一時間都是綁定在同一台節點的網卡上。
+
+    當外部主機有請求要發往集群內的某個 Service，需要先確定目標主機網卡的 mac 地址（至於為什麼，參考維基百科）。這是通過發送 ARP 請求，Leader 節點的會以其 mac 地址作為響應。外部主機會在本地 ARP 表中緩存下來，下次會直接從 ARP 表中獲取。
+
+    請求到達節點後，節點再通過 kube-proxy 將請求負載均衡目標 Pod。所以說，假如Service 是多 Pod 這裡有可能會再跳去另一台主機。
+
+
+# ingress 介紹 ( https://ithelp.ithome.com.tw/articles/10224065 )  
+               ( https://ithelp.ithome.com.tw/articles/10196261 )
+
+    Service 同時運行時，Node 都需要有相對應的 port number 去對應相每個 Service 的 port number。
+
+    若是使用 Ingress ，我們只需開放一個對外的 port number，Ingress 可以在設定檔中設置不同的路徑，決定要將使用者的請求傳送到哪個 Service 物件。
+    這樣的設計，除了讓運維者無需維護多個 port 或頻繁更改防火牆(firewall)外，可以自設條件的功能也使得請求的導向更加彈性。
