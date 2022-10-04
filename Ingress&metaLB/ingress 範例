@@ -151,7 +151,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: k8s.test3.com
+  - host: k8s.nginx.com
     http:
       paths:
       - path: /
