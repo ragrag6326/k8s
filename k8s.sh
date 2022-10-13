@@ -180,7 +180,7 @@ fi
 
 # P4. kubelet kubeadm kubectl 
     echo "--- k8s套件下載中 ---" ; sleep 3
-        k8s=/etc/kubernetes/manifests/kube-vip-arp.yaml > /dev/null
+        k8s=/etc/kubernetes/manifests/kube-apiserver.yaml > /dev/null
     if  [ -f $k8s ] ; then
         echo "-- k8s install completed --" ; sleep 2
     else
