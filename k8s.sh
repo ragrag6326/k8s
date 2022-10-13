@@ -276,7 +276,7 @@ fi
             if [ $? = 0 ] ; then
                  echo "Copy successfully" ; sleep 2
                         ssh $wlist ./k8s.sh
-            else echo "沒有k8s.sh此檔案" && exit
+            else 
             fi
         fi
     done
@@ -299,7 +299,6 @@ fi
             # 加入後需重啟 coredns掛掉，pod溝通
             kubectl -n kube-system rollout restart deployment coredns
             # kubectl -n kube-system rollout restert deployment calico-kube-controllers
-            exit
         fi
     done
 
