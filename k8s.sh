@@ -272,7 +272,7 @@ fi
             echo "----$wlist scp now----" ; sleep 2
             scp k8s.sh $wlist:${HOME}
 
-                ssh $wlist cat ${HOME}/k8s.sh > /dev/null
+            ssh $wlist cat ${HOME}/k8s.sh > /dev/null
             if [ $? = 0 ] ; then
                  echo "Copy successfully" ; sleep 2
                         ssh $wlist ./k8s.sh
