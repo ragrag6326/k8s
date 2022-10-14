@@ -180,7 +180,7 @@ fi
 
 # P4. kubelet kubeadm kubectl 
     echo "--- k8s套件下載中 ---" ; sleep 3
-        k8s=/etc/kubernetes/manifests/kube-vip-arp.yaml > /dev/null
+        k8s=/etc/kubernetes/manifests/kube-apiserver.yaml > /dev/null
     if  [ -f $k8s ] ; then
         echo "-- k8s install completed --" ; sleep 2
     else
@@ -276,7 +276,6 @@ fi
             if [ $? = 0 ] ; then
                  echo "Copy successfully" ; sleep 2
                         ssh $wlist ./k8s.sh
-            else echo "沒有k8s.sh此檔案" && exit
             fi
         fi
     done
@@ -299,7 +298,6 @@ fi
             # 加入後需重啟 coredns掛掉，pod溝通
             kubectl -n kube-system rollout restart deployment coredns
             # kubectl -n kube-system rollout restert deployment calico-kube-controllers
-            exit
         fi
     done
 
