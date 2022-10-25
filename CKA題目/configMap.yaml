@@ -1,0 +1,202 @@
+Question:
+Create a configmap called cfgvolume with values var1=val1,
+var2=val2 and create an nginx pod with volume nginx-volume which
+reads data from this configmap cfgvolume and put it on the path
+/etc/cfg
+
+
+一、 k8s 中的環境變數 :
+      再介紹 "ConfigMap" 前要先了解 K8S 中使用環境變數的方法
+      在 k8s 中要為Pod添加環境變數 , 可以透過兩種方式
+
+      1. 一種是在 Pod Yaml檔中直接加入env參數
+        apiVersion: v1
+        kind: Pod
+        metadata: 
+          name: myweb
+        spec:
+          - name: myweb
+            image: nginx
+            ports:
+              - containerPort: 8080
+            env: 
+            - name: color
+              value: blue
+
+      2. 在創建Pod的時候在後面加上 -env 參數
+         $ kubectl run my-web --env color=blue
+
+
+二、 ConfigMap 說明、用途 :
+      若每個 Pod 都要各別設定環境變數 , Pod數量大的話,不僅設定麻煩維護也非常不方便 ,
+      因此 k8s 為此提供一個 ConfigMap 物件來解決。
+        ConfigMap是一種API object,用於將非機密的資料儲存在key:value pair中
+
+      可將ConfigMap視為以下方式加以使用
+        1.環境變數
+        2.command參數
+        3.Volume中的配置文件來使用
+
+        ConfigMap 跟 Secret 非常相似, 但是ConfigMap不提保密、加密
+
+
+三、 ConfigMap 創建方式 : 
+
+      1.命令方式
+        $ kubectl create configmap <configmap-name> --from-literal=<key>=<value>
+          kubectl create configmap web-config --from-literal=coloer=blue \
+          --from-literal=mod=app
+
+        或是 configmap 路徑
+        $ kubectl create configmap <configmap-name> --from-literal=<config-path>  
+          kubectl create configmap web-config --from-literal=web-config.properties
+
+
+      2.YAML檔方式
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+data:
+  # property-like keys; each key maps to a simple value
+  player_initial_lives: "3"
+  ui_properties_file_name: "user-interface.properties"
+  # file-like keys
+  game.properties: |
+    enemy.types=aliens,monsters
+    player.maximum-lives=5
+  user-interface.properties: |
+    color.good=purple
+    color.bad=yellow
+    allow.textmode=true
+    
+
+四、 Pod 使用 ConfigMap , 可以有"環境變數方式" 或 "Volume掛載"兩種方式:
+
+    1. 環境變數方式
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo-pod
+spec:
+  containers:
+    - name: demo
+      image: nginx
+      ports:
+        - containerPort: 80
+      envFrom:
+      - configMapRef:
+          name: web-config
+
+      2. Volume 掛載方式
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo-pod
+spec:
+  containers:
+    - name: demo
+      image: nginx
+      volumeMounts:
+      - name: config
+        mountPath: "/config"
+        readOnly: true
+  volumes:
+    ## You set volumes at the Pod level, then mount them into containers inside that Pod
+    - name: config
+      configMap:
+        ## Provide the name of the ConfigMap you want to mount.
+        name: web-config
+        ## An array of keys from the ConfigMap to create as files
+        items:
+        - key: "game.properties"
+          path: "game.properties"
+        - key: "user-interface.properties"
+          path: "user-interface.properties"
+
+
+
+五、 Answer :
+
+  Create a configmap called cfgvolume with values var1=val1,
+  var2=val2 and create an nginx pod with volume nginx-volume which
+  reads data from this configmap cfgvolume and put it on the path
+  /etc/cfg
+
+  1. 創建名為cfgvolume的configMap
+  kubectl create cm cfgvolume --from-literal=var1=val1 --fromliteral=var2=val2
+
+  2. 檢查是否創建成功
+  kubectl describe cm cfgvolume
+
+  3. 將 configmap 掛載到 pod中
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  volumes:
+  - name: nginx-volume
+    configMap:
+      name: cfgvolume
+  containers:
+  - image: nginx
+    name: nginx
+    volumeMounts:
+    - name: nginx-volume
+      mountPath: /etc/cfg
+
+  4. 進入 pod 中驗證是否有 
+    kubectl exec -it nginx -- /bin/sh
+    cd /etc/cfg
+
+
+
+六、 補充 (configmap 結合環境變數使用):
+
+ 1. 創建名為 env 的 configMap
+  kubectl create cm cmenv --from-file=my-config.txt \
+  --from-literal=var1=config1 \
+  --fromliteral=var2=config2
+
+
+2. 結合 env 使用
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cmenv
+spec:
+  containers:
+    - name: test-cm
+      image: gcr.io/kuar-demo/kuard-amd64:1
+      imagePullPolicy: Always
+      command:
+        - "/kuard"
+        - "$(VAR2)"
+      env:
+        - name: VAR1
+          valueFrom:
+            configMapKeyRef:
+              name: cmenv
+              key: var1
+        - name: VAR2
+          valueFrom:
+            configMapKeyRef:
+              name: cmenv
+              key: var2
+      volumeMounts:
+        - name: config-volume
+          mountPath: /config
+  volumes:
+    - name: config-volume
+      configMap:
+        name: cmenv
+  restartPolicy: Never
+
+  引用環境變數,定義在 env - valueFrom 範圍中,這會參照該 cmenv (ConfigMap)裡頭的 key 作為環境變數。
+
