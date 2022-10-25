@@ -1,0 +1,30 @@
+adduser allen 
+adduser allen sudo
+
+mkdir /home/allen/.ssh/
+
+cat <<EOF |sudo tee -a /home/allen/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCaMbY5GUyIt7G9AYMHJS3d/cKRu6MN5q9H+wMHW7/FwreZ8Q8du5vHoL5QqXyoXmH5wa/Dl3jPoxPVlX11TrgSHviKCAvO3E/Y7S1wql1K9CZ33qcqYgZYpDg0PkN547pR2YlHnV6muu6lC+9uVwXGsgdUrCZmTF7vDKqRWV9zpD73Z2eMwOiqvtWZZ2br+TVywsg/TeAC0s75b+WoA1ujQtK0eJQ8VWBSzzJKPbl5UKTBN6GoNwT3VvKCdj5IOB3PUdra3BeQAJjwsNhGrUe0eeD6h8WcxrwxvSiKH2dMn3S/zrfYnHPT84kp0xhSJyF/Wu6wCC2YzPvAbKc+amTz allen-20221018
+EOF
+
+sudo chmod 600 /home/allen/.ssh/authorized_keys
+sudo chmod allen:allen /home/allen/.ssh
+
+sudo systemctl restart ssh.service sshd.service
+
+
+
+sudo useradd allen
+sudo mkdir /home/allen/.ssh/
+
+cat <<EOF |sudo tee -a /home/allen/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCaMbY5GUyIt7G9AYMHJS3d/cKRu6MN5q9H+wMHW7/FwreZ8Q8du5vHoL5QqXyoXmH5wa/Dl3jPoxPVlX11TrgSHviKCAvO3E/Y7S1wql1K9CZ33qcqYgZYpDg0PkN547pR2YlHnV6muu6lC+9uVwXGsgdUrCZmTF7vDKqRWV9zpD73Z2eMwOiqvtWZZ2br+TVywsg/TeAC0s75b+WoA1ujQtK0eJQ8VWBSzzJKPbl5UKTBN6GoNwT3VvKCdj5IOB3PUdra3BeQAJjwsNhGrUe0eeD6h8WcxrwxvSiKH2dMn3S/zrfYnHPT84kp0xhSJyF/Wu6wCC2YzPvAbKc+amTz allen-20221018
+EOF
+
+sudo chmod 600 /home/allen/.ssh/authorized_keys
+
+sudo chown allen:allen /home/allen/.ssh ; sudo chown allen:allen /home/allen/.ssh/authorized_keys
+
+sudo cat /home/allen/.ssh/authorized_keys
+
+sudo systemctl restart sshd.service
