@@ -1,14 +1,9 @@
-# k8s install for ubuntu 22.04
+# k8s install for ubuntu 22.04 、 ubuntu 20.04 
 
-hosts 設定為 
-m1:130
-w1:132
-w2:133
-
-# ubEnv-setting.Sh  安裝Kubernetes設定IP前置作業
-0. wget https://raw.githubusercontent.com/ragrag6326/k8s/main/ubEnv-setting.Sh -O env.sh
+# 環境設定 , 安裝Kubernetes 設定固定IP前置作業
+0. wget https://raw.githubusercontent.com/ragrag6326/ragrag6326/main/env-setting.sh -O env.sh
 1. 請先設定好一台m1 執行(上面網址)
-2. m1設定完成後，再複製兩台 w1 w2 一樣執行ubEnv-setting.Sh 設定 IP 
+2. m1設定完成後，再複製兩台 w1 w2 一樣執行env-setting.Sh 設定 IP 
 
 # k8s.sh 自動部屬 cri-o podman kubelet kubeadm 套件
   0. wget https://raw.githubusercontent.com/ragrag6326/k8s/main/k8s.sh 
