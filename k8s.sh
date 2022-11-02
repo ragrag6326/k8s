@@ -41,7 +41,7 @@ clear
     #註解 swap 內容
     sudo cat /etc/fstab | grep "swap" > /dev/null
     if [ $? = 0 ] ; then
-        sudo sed -i '12,/swap/d' /etc/fstab
+        sudo sed -i '10,/swap/d' /etc/fstab
         echo "----swap off successed----" ; sleep 3
     #確認是否關閉
         sudo swapon --show 
@@ -247,8 +247,26 @@ fi
         # taint masternode (設定 Master 可以執行 Pod)
             kubectl taint node ${init_master} node-role.kubernetes.io/control-plane:NoSchedule-
             kubectl taint node ${init_master} node-role.kubernetes.io/master:NoSchedule-
-    
+        
+        # k8s 命令縮寫 重起啟動
+        cat <<EOF | sudo tee -a ${HOME}/.bashrc
+        alias k='kubectl'
+        alias kg='kubectl get'
+        alias kd='kubectl describe'
+        alias kdel='kubectl delete'
+        alias kc='kubectl create'
+        alias ns='namespace' 
+EOF
 
+        #  k8s 命令縮寫
+        alias k='kubectl' 
+        alias kg='kubectl get' 
+        alias kd='kubectl describe' 
+        alias kdel='kubectl delete' 
+        alias kc='kubectl create' 
+        alias ns='namespace'
+        
+        
 # P6. calico (CNI)
 
     # calico yaml
