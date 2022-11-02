@@ -124,7 +124,7 @@ else
     #  cri-o 設定檔修改 
     clear 
     echo "cri-o 設定檔修改中" ; sleep 2
-    sudo cat /etc/crio/crio.conf | grep 'cgroup_manager = \"systemd\"' > /dev/null
+    sudo cat /etc/crio/crio.conf | grep 'plugin_dir = \"/opt/cni/bin\"' > /dev/null
 if [ $? = 0 ] ; then
     echo "crio.conf setting ok" ; sleep 2
 else
