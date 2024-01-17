@@ -9,7 +9,7 @@ echo " (copy)前 , 先確認n1 n2 有放master node的 pub key "
     sudo apt install net-tools -y
     # cri & k8s 版本宣告
     
-    export KUBE_VER=1.27.0
+    export KUBE_VER=1.29.0
     export CRIO_VERSION=1.25
     export OS_VERSION_ID=xUbuntu_$(cat /etc/os-release | grep VERSION_ID | awk -F"=" '{print $2}' | tr -d '"')
 
