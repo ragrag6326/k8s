@@ -20,6 +20,8 @@ wget https://raw.githubusercontent.com/ragrag6326/k8s-ubuntu/1.29.0/k8s-1.29.sh 
 # 2024/01/17 更新安裝 metallb 安裝版本步驟
 curl -s -k https://raw.githubusercontent.com/ragrag6326/k8s-ubuntu/1.29.0/metallb.sh | sh
 
-# 更新安裝 metallb 安裝版本步驟
+# 安裝 ingress
 curl -s -k https://raw.githubusercontent.com/ragrag6326/k8s-ubuntu/1.29.0/ingress-nginx.sh | sh
+
+
 
