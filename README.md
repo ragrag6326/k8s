@@ -16,3 +16,11 @@
 
 # 2023/07/09 新增安裝Kubernetes 1.27.0 版
 wget https://raw.githubusercontent.com/ragrag6326/k8s-ubuntu/main/k8s-1.27.sh -O k8s.sh ; chmod +x k8s.sh
+
+
+# 2024/01/17 新增安裝Kubernetes 1.29.0 版
+wget https://raw.githubusercontent.com/ragrag6326/k8s-ubuntu/main/k8s-1.29.sh -O k8s.sh ; chmod +x k8s.sh
+
+# 2024/01/17 更新安裝 metallb 安裝版本步驟
+
+
