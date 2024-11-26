@@ -1,6 +1,6 @@
 # k8s install for ubuntu 22.04 、 ubuntu 20.04 
 
-version 3
+version 123
 
 # 環境設定 , 安裝Kubernetes 設定固定IP前置作業
 0. wget https://raw.githubusercontent.com/ragrag6326/ragrag6326/main/env-setting.sh -O env.sh
