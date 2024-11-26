@@ -1,5 +1,5 @@
 #! /bin/bash
-
+# test
 # P1. 修改 sudo 免密碼 & ssh 登入詢問
   
   sudo sed -i "s/%sudo\tALL=(ALL:ALL) ALL/%sudo\tALL=(ALL:ALL) NOPASSWD: ALL/g" /etc/sudoers
